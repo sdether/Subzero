@@ -27,7 +27,7 @@ namespace Droog.Subzero.Test {
         [Test]
         public void Can_call_methods_on_wrapped_instance() {
             var data = new FreezableData() { Id = 42, Name = "Everything" };
-            var data2 = new Freezer().AsFreezable(data);
+            var data2 = Freezer.AsFreezable(data);
             Assert.IsTrue(data2.IsA<Freezer.IFreezableWrapper>());
             AssertSameValue(data, data2);
         }
@@ -45,7 +45,7 @@ namespace Droog.Subzero.Test {
         }
 
         [Test]
-        public void Thaw_on_unfrozen_returen_new_unfrozen_instance() {
+        public void Thaw_on_unfrozen_returns_new_unfrozen_instance() {
             var data = CreateData();
             var data2 = data.Thaw();
             Assert.AreNotSame(data, data2);
@@ -103,7 +103,7 @@ namespace Droog.Subzero.Test {
         }
 
         private FreezableData CreateData() {
-            return new Freezer().AsFreezable(new FreezableData { Id = 42, Name = "Everything" });
+            return Freezer.AsFreezable(new FreezableData { Id = 42, Name = "Everything" });
         }
 
         public class FreezableData : IFreezable<FreezableData> {

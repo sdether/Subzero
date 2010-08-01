@@ -15,18 +15,17 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-using System;
 using Droog.Subzero.Util;
 using NUnit.Framework;
 
 namespace Droog.Subzero.Test {
 
     [TestFixture]
-    public class IFreezableWithCloneTests {
+    public class PocoTests {
 
         [Test]
         public void Can_call_methods_on_wrapped_instance() {
-            var data = new FreezableData() { Id = 42, Name = "Everything" };
+            var data = new Data() { Id = 42, Name = "Everything" };
             var data2 = Freezer.AsFreezable(data);
             Assert.IsTrue(data2.IsA<Freezer.IFreezableWrapper>());
             AssertSameValue(data, data2);
@@ -34,116 +33,127 @@ namespace Droog.Subzero.Test {
 
         [Test]
         public void Can_detect_wrapped_instances() {
-            var data = new FreezableData() { Id = 42, Name = "Everything" };
+            var data = new Data() { Id = 42, Name = "Everything" };
             Assert.IsFalse(Freezer.IsFreezable(data));
             var data2 = Freezer.AsFreezable(data);
             Assert.IsTrue(Freezer.IsFreezable(data2));
         }
 
         [Test]
-        public void Cloning_a_wrapped_instance_produces_wrapped_instance() {
-            var data = CreateData();
-            var data2 = data.Clone();
-            Assert.AreNotSame(data, data2);
-            Assert.IsTrue(data2.IsA<Freezer.IFreezableWrapper>());
-            AssertSameValue(data, data2);
+        [ExpectedException(typeof(NonFreezableException))]
+        public void Freeze_throws_on_non_freezable() {
+            var data = new Data() { Id = 42, Name = "Everything" };
+            Freezer.Freeze(data);
+        }
+
+        [Test]
+        [ExpectedException(typeof(NonFreezableException))]
+        public void IsFrozen_throws_on_non_freezable() {
+            var data = new Data() { Id = 42, Name = "Everything" };
+            Freezer.IsFrozen(data);
+        }
+
+        [Test]
+        [ExpectedException(typeof(NonFreezableException))]
+        public void Thaw_throws_on_non_freezable() {
+            var data = new Data() { Id = 42, Name = "Everything" };
+            Freezer.Thaw(data);
         }
 
         [Test]
         public void Wrapped_instance_is_unfrozen_by_default() {
-            Assert.IsFalse(CreateData().IsFrozen);
+            Assert.IsFalse(Freezer.IsFrozen(CreateData()));
         }
 
         [Test]
         public void Can_freeze_instance() {
             var data = CreateData();
-            data.Freeze();
-            Assert.IsTrue(data.IsFrozen);
-        }
-
-        [Test]
-        public void Thaw_on_unfrozen_clones_using_clone_method() {
-            var data = CreateData();
-            var data2 = data.Thaw();
-            Assert.AreNotSame(data, data2);
-            Assert.AreEqual(data.Sequence + 1, data2.Sequence);
+            Freezer.Freeze(data);
+            Assert.IsTrue(Freezer.IsFrozen(data));
         }
 
         [Test]
         public void Thaw_on_unfrozen_returns_new_unfrozen_instance() {
             var data = CreateData();
-            var data2 = data.Thaw();
+            var data2 = Freezer.Thaw(data);
             Assert.AreNotSame(data, data2);
             AssertSameValue(data, data2);
-            Assert.IsFalse(data2.IsFrozen);
+            Assert.IsFalse(Freezer.IsFrozen(data2));
         }
 
         [Test]
         public void Thaw_on_frozen_returns_new_unfrozen_instance() {
             var data = CreateData();
-            data.Freeze();
-            var data2 = data.Thaw();
+            Freezer.Freeze(data);
+            var data2 = Freezer.Thaw(data);
             Assert.AreNotSame(data, data2);
             AssertSameValue(data, data2);
-            Assert.IsFalse(data2.IsFrozen);
+            Assert.IsFalse(Freezer.IsFrozen(data2));
         }
 
         [Test]
         [ExpectedException(typeof(FrozenAccessException))]
         public void Setting_off_frozen_instance_property_throws() {
             var data = CreateData();
-            data.Freeze();
+            Freezer.Freeze(data);
             data.Id = 45;
         }
 
         [Test]
         public void Can_read_frozen_property() {
             var data = CreateData();
-            data.Freeze();
+            Freezer.Freeze(data);
             var id = data.Id;
+        }
+
+        [Test]
+        public void FreezeDry_on_non_freezable_returns_freezable() {
+            var data = new Data() { Id = 42, Name = "Everything" };
+            var data2 = Freezer.FreezeDry(data);
+            Assert.AreNotSame(data,data2);
+            Assert.IsTrue(Freezer.IsFreezable(data2));
+            AssertSameValue(data, data2);
+            Assert.IsTrue(Freezer.IsFrozen(data2));
         }
 
         [Test]
         public void FreezeDry_clones_unfrozen_instance() {
             var data = CreateData();
-            var data2 = data.FreezeDry();
-            AssertSameValue(data,data2);
-            Assert.IsFalse(data.IsFrozen);
-            Assert.IsTrue(data2.IsFrozen);
+            var data2 = Freezer.FreezeDry(data);
+            AssertSameValue(data, data2);
+            Assert.IsFalse(Freezer.IsFrozen(data));
+            Assert.IsTrue(Freezer.IsFrozen(data2));
         }
 
         [Test]
         public void FreezeDry_on_frozen_instance_is_noop() {
             var data = CreateData();
-            data.Freeze();
-            var data2 = data.FreezeDry();
-            Assert.AreSame(data,data2);
-            Assert.IsTrue(data2.IsFrozen);
+            Freezer.Freeze(data);
+            var data2 = Freezer.FreezeDry(data);
+            Assert.AreSame(data, data2);
+            Assert.IsTrue(Freezer.IsFrozen(data2));
         }
 
-        private void AssertSameValue(FreezableData first, FreezableData next) {
+        private void AssertSameValue(Data first, Data next) {
             Assert.AreEqual(first.Id, next.Id);
             Assert.AreEqual(first.Name, next.Name);
         }
 
-        private FreezableData CreateData() {
-            return Freezer.AsFreezable(new FreezableData { Id = 42, Name = "Everything" });
+        private Data CreateData() {
+            return Freezer.AsFreezable(new Data { Id = 42, Name = "Everything" });
         }
 
-        public class FreezableData : IFreezable<FreezableData> {
-
+        public class Data {
             public virtual int Id { get; set; }
             public virtual string Name { get; set; }
-            public virtual int Sequence { get; set; }
-            public virtual FreezableData Clone() { return new FreezableData { Id = Id, Name = Name, Sequence = Sequence + 1 }; }
-
-            #region Implementation of IFreezable<Data>
-            public virtual void Freeze() { throw new NotImplementedException(); }
-            public virtual FreezableData FreezeDry() { throw new NotImplementedException(); }
-            public virtual bool IsFrozen { get { throw new NotImplementedException(); } }
-            public virtual FreezableData Thaw() { throw new NotImplementedException(); }
-            #endregion
         }
 
+        public class DataGraph {
+            public DataGraph() {
+                ReadonlyData = new Data();
+            }
+            public virtual Data SettableData { get; set; }
+            public virtual Data ReadonlyData { get; private set; }
+        }
     }
 }

@@ -60,6 +60,7 @@
     <Compile Include="Freezer.cs" />
     <Compile Include="FrozenAccessException.cs" />
     <Compile Include="IFreezable.cs" />
+    <Compile Include="NonFreezableException.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="Util\SubzeroExtensions.cs" />
   </ItemGroup>

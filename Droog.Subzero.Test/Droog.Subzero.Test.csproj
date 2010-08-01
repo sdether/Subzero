@@ -51,6 +51,8 @@
   <ItemGroup>
     <Compile Include="IFreezableWithoutCloneTests.cs" />
     <Compile Include="IFreezableWithCloneTests.cs" />
+    <Compile Include="PocoGraphTests.cs" />
+    <Compile Include="PocoTests.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>
   <ItemGroup>

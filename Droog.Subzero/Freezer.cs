@@ -15,6 +15,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+using System;
 using System.Reflection;
 using Castle.Core.Interceptor;
 using Castle.DynamicProxy;
@@ -26,14 +27,49 @@ namespace Droog.Subzero {
 
         public interface IFreezableWrapper { }
 
-        private readonly ProxyGenerator _generator = new ProxyGenerator();
+        private static readonly ProxyGenerator _generator = new ProxyGenerator();
 
         // TODO: need to make sure all members are virtual
-        public T AsFreezable<T>(T instance) where T : class {
+        public static T AsFreezable<T>(T instance) where T : class {
             if(instance.IsA<IFreezableWrapper>()) {
                 return instance;
             }
             return (T)Wrap(_generator, instance, false);
+        }
+
+        public static bool IsFreezable<T>(T instance) where T : class {
+            return CheckInstance(instance);
+        }
+
+        public static bool IsFrozen<T>(T instance) where T : class {
+            var freezable = CastToFreezableOrThrow(instance);
+            return freezable.IsFrozen;
+        }
+
+        public static void Freeze<T>(T instance) where T : class {
+            var freezable = CastToFreezableOrThrow(instance);
+            freezable.Freeze();
+        }
+
+        public static T Thaw<T>(T instance) where T : class {
+            var freezable = CastToFreezableOrThrow(instance);
+            return freezable.Thaw();
+        }
+
+        public static T FreezeDry<T>(T instance) where T : class {
+            var freezable = instance as IFreezable<T>;
+            return freezable == null ? ((IFreezable<T>)AsFreezable(instance)).FreezeDry() : freezable.FreezeDry();
+        }
+
+
+        private static IFreezable<T> CastToFreezableOrThrow<T>(T instance) where T : class {
+            if(!CheckInstance(instance)) {
+                throw new NonFreezableException(string.Format("Instance '{0}' is not an IFreezable or wrapped by a freezable proxy", instance.GetType()));
+            }
+            return instance as IFreezable<T>;
+        }
+        private static bool CheckInstance(object instance) {
+            return instance.IsA<IFreezableWrapper>();
         }
 
         private static object Wrap<T>(ProxyGenerator generator, T instance, bool frozen) where T : class {
@@ -85,7 +121,7 @@ namespace Droog.Subzero {
                         return;
                 }
                 if(_frozen && methodName.StartsWith("set_")) {
-                    throw new FrozenAccessException(string.Format("Cannot set '{0}' on frozen instance of '{1}'",methodName.Substring(4),_instance.GetType()));
+                    throw new FrozenAccessException(string.Format("Cannot set '{0}' on frozen instance of '{1}'", methodName.Substring(4), _instance.GetType()));
                 }
                 invocation.ReturnValue = invocation.MethodInvocationTarget.Invoke(_instance, invocation.Arguments);
             }
