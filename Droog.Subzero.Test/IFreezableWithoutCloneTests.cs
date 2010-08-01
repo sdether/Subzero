@@ -78,6 +78,25 @@ namespace Droog.Subzero.Test {
             var id = data.Id;
         }
 
+
+        [Test]
+        public void FreezeDry_clones_unfrozen_instance() {
+            var data = CreateData();
+            var data2 = data.FreezeDry();
+            AssertSameValue(data, data2);
+            Assert.IsFalse(data.IsFrozen);
+            Assert.IsTrue(data2.IsFrozen);
+        }
+
+        [Test]
+        public void FreezeDry_on_frozen_instance_is_noop() {
+            var data = CreateData();
+            data.Freeze();
+            var data2 = data.FreezeDry();
+            Assert.AreSame(data, data2);
+            Assert.IsTrue(data2.IsFrozen);
+        }
+
         private void AssertSameValue(FreezableData first, FreezableData next) {
             Assert.AreEqual(first.Id, next.Id);
             Assert.AreEqual(first.Name, next.Name);

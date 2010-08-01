@@ -61,7 +61,8 @@ namespace Droog.Subzero {
             }
 
             public void Intercept(IInvocation invocation) {
-                switch(invocation.MethodInvocationTarget.Name) {
+                var methodName = invocation.MethodInvocationTarget.Name;
+                switch(methodName) {
                     case "Freeze":
                         _frozen = true;
                         return;
@@ -82,6 +83,9 @@ namespace Droog.Subzero {
                         var instance = invocation.MethodInvocationTarget.Invoke(_instance, invocation.Arguments);
                         invocation.ReturnValue = Wrap(_generator, (T)instance, false);
                         return;
+                }
+                if(_frozen && methodName.StartsWith("set_")) {
+                    throw new FrozenAccessException(string.Format("Cannot set '{0}' on frozen instance of '{1}'",methodName.Substring(4),_instance.GetType()));
                 }
                 invocation.ReturnValue = invocation.MethodInvocationTarget.Invoke(_instance, invocation.Arguments);
             }

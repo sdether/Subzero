@@ -18,5 +18,7 @@
 using System;
 
 namespace Droog.Subzero {
-    public class FrozenAccessException : Exception { }
+    public class FrozenAccessException : Exception {
+        public FrozenAccessException(string message) : base(message) { }
+    }
 }
