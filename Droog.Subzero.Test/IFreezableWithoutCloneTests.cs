@@ -27,7 +27,7 @@ namespace Droog.Subzero.Test {
         [Test]
         public void Can_call_methods_on_wrapped_instance() {
             var data = new FreezableData() { Id = 42, Name = "Everything" };
-            var data2 = new Freezer().Build(data);
+            var data2 = new Freezer().AsFreezable(data);
             Assert.IsTrue(data2.IsA<Freezer.IFreezableWrapper>());
             AssertSameValue(data, data2);
         }
@@ -84,7 +84,7 @@ namespace Droog.Subzero.Test {
         }
 
         private FreezableData CreateData() {
-            return new Freezer().Build(new FreezableData { Id = 42, Name = "Everything" });
+            return new Freezer().AsFreezable(new FreezableData { Id = 42, Name = "Everything" });
         }
 
         public class FreezableData : IFreezable<FreezableData> {
@@ -94,6 +94,8 @@ namespace Droog.Subzero.Test {
 
             #region Implementation of IFreezable<Data>
             public virtual void Freeze() { throw new NotImplementedException(); }
+            public virtual FreezableData FreezeDry() { throw new NotImplementedException(); }
+
             public virtual bool IsFrozen { get { return false; } }
             public virtual FreezableData Thaw() { throw new NotImplementedException(); }
             #endregion

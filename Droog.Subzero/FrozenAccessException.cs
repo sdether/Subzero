@@ -15,12 +15,8 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-namespace Droog.Subzero {
-    public interface IFreezable<T> where T : class {
-        bool IsFrozen { get; }
+using System;
 
-        void Freeze();
-        T FreezeDry();
-        T Thaw();
-    }
+namespace Droog.Subzero {
+    public class FrozenAccessException : Exception { }
 }

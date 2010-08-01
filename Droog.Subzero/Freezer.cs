@@ -15,7 +15,6 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-using System;
 using System.Reflection;
 using Castle.Core.Interceptor;
 using Castle.DynamicProxy;
@@ -23,10 +22,6 @@ using Droog.Subzero.Util;
 using Metsys.Little;
 
 namespace Droog.Subzero {
-
-    public class FrozenAccessException : Exception {
-    }
-
     public class Freezer {
 
         public interface IFreezableWrapper { }
@@ -34,22 +29,18 @@ namespace Droog.Subzero {
         private readonly ProxyGenerator _generator = new ProxyGenerator();
 
         // TODO: need to make sure all members are virtual
-        // TODO: combine Build and AsFreezable?
-        public T Build<T>(T instance) where T : class, IFreezable<T> {
-            if(instance.IsA<IFreezableWrapper>()) {
-                return instance;
-            }
-            return (T)_generator.CreateClassProxy(typeof(T), new[] { typeof(IFreezableWrapper) }, new FreezableInterceptor<T>(_generator, instance));
-        }
-
         public T AsFreezable<T>(T instance) where T : class {
             if(instance.IsA<IFreezableWrapper>()) {
                 return instance;
             }
-            if(instance.IsA<IFreezable<T>>()) {
-                return (T)_generator.CreateClassProxy(typeof(T), new[] { typeof(IFreezableWrapper) }, new FreezableInterceptor<T>(_generator, instance));
-            }
-            return (T)_generator.CreateClassProxy(typeof(T), new[] { typeof(IFreezable<T>), typeof(IFreezableWrapper) }, new FreezableInterceptor<T>(_generator, instance));
+            return (T)Wrap(_generator, instance, false);
+        }
+
+        private static object Wrap<T>(ProxyGenerator generator, T instance, bool frozen) where T : class {
+            var interceptor = new FreezableInterceptor<T>(generator, instance, frozen);
+            var freezable = generator.CreateClassProxy(typeof(T), new[] { typeof(IFreezable<T>), typeof(IFreezableWrapper) }, interceptor);
+            interceptor.This = freezable;
+            return freezable;
         }
 
         private class FreezableInterceptor<T> : IInterceptor where T : class {
@@ -57,10 +48,12 @@ namespace Droog.Subzero {
             private readonly object _instance;
             private readonly MethodInfo _cloneMethod;
             private bool _frozen;
+            public object This;
 
-            public FreezableInterceptor(ProxyGenerator generator, object instance) {
+            public FreezableInterceptor(ProxyGenerator generator, object instance, bool frozen) {
                 _generator = generator;
                 _instance = instance;
+                _frozen = frozen;
                 var cloneMethod = _instance.GetType().GetMethod("Clone", BindingFlags.Public | BindingFlags.Instance);
                 if(cloneMethod != null && cloneMethod.ReturnType == _instance.GetType() && !cloneMethod.IsGenericMethod && cloneMethod.GetParameters().Length == 0) {
                     _cloneMethod = cloneMethod;
@@ -75,25 +68,32 @@ namespace Droog.Subzero {
                     case "get_IsFrozen":
                         invocation.ReturnValue = _frozen;
                         return;
-                    case "Thaw":
-                        T thawed;
-                        if(_cloneMethod != null) {
-                            thawed = (T)_cloneMethod.Invoke(_instance,new object[0]);
-                        } else {
-                            thawed = Deserializer.Deserialize<T>(Serializer.Serialize(_instance));
+                    case "FreezeDry":
+                        if(_frozen) {
+                            invocation.ReturnValue = This;
+                            return;
                         }
-                        invocation.ReturnValue = Wrap(thawed);
+                        invocation.ReturnValue = Clone(true);
+                        return;
+                    case "Thaw":
+                        invocation.ReturnValue = Clone(false);
                         return;
                     case "Clone":
                         var instance = invocation.MethodInvocationTarget.Invoke(_instance, invocation.Arguments);
-                        invocation.ReturnValue = Wrap(instance);
+                        invocation.ReturnValue = Wrap(_generator, (T)instance, false);
                         return;
                 }
                 invocation.ReturnValue = invocation.MethodInvocationTarget.Invoke(_instance, invocation.Arguments);
             }
 
-            private object Wrap(object instance) {
-                return _generator.CreateClassProxy(typeof(T), new[] { typeof(IFreezable<T>), typeof(IFreezableWrapper) }, new FreezableInterceptor<T>(_generator, instance));
+            private object Clone(bool frozen) {
+                T clone;
+                if(_cloneMethod != null) {
+                    clone = (T)_cloneMethod.Invoke(_instance, new object[0]);
+                } else {
+                    clone = Deserializer.Deserialize<T>(Serializer.Serialize(_instance));
+                }
+                return Wrap(_generator, clone, frozen);
             }
         }
     }
