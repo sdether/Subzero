@@ -1,0 +1,26 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 10.00
+# Visual Studio 2008
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Droog.Subzero", "Droog.Subzero\Droog.Subzero.csproj", "{BE613043-B2F7-466A-870F-F52D5C571D3C}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Droog.Subzero.Test", "Droog.Subzero.Test\Droog.Subzero.Test.csproj", "{D5A756D6-5F31-4970-9F95-DB8EF33D27A9}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{BE613043-B2F7-466A-870F-F52D5C571D3C}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{BE613043-B2F7-466A-870F-F52D5C571D3C}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{BE613043-B2F7-466A-870F-F52D5C571D3C}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{BE613043-B2F7-466A-870F-F52D5C571D3C}.Release|Any CPU.Build.0 = Release|Any CPU
+		{D5A756D6-5F31-4970-9F95-DB8EF33D27A9}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{D5A756D6-5F31-4970-9F95-DB8EF33D27A9}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{D5A756D6-5F31-4970-9F95-DB8EF33D27A9}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{D5A756D6-5F31-4970-9F95-DB8EF33D27A9}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+EndGlobal
