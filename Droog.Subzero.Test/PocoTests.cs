@@ -147,13 +147,5 @@ namespace Droog.Subzero.Test {
             public virtual int Id { get; set; }
             public virtual string Name { get; set; }
         }
-
-        public class DataGraph {
-            public DataGraph() {
-                ReadonlyData = new Data();
-            }
-            public virtual Data SettableData { get; set; }
-            public virtual Data ReadonlyData { get; private set; }
-        }
     }
 }

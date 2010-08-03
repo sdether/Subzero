@@ -16,11 +16,11 @@
  * limitations under the License.
  */
 namespace Droog.Subzero {
-    public interface IFreezable<T> where T : class {
-        bool IsFrozen { get; }
+public interface IFreezable<T> where T : class {
+    bool IsFrozen { get; }
 
-        void Freeze();
-        T FreezeDry();
-        T Thaw();
-    }
+    void Freeze();
+    T FreezeDry();
+    T Thaw();
+}
 }
