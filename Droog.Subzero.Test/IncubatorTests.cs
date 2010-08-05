@@ -28,21 +28,32 @@ namespace Droog.Subzero.Test {
 
         [Test]
         public void Can_clone_simple_dto() {
-            var expected = new Simple() { Id = 42 };
+            var expected = new Simple() { Id = 42, Name = "Everything" };
             var clone = Incubator.Clone(expected);
 
             Assert.AreNotSame(expected, clone);
             Assert.AreEqual(expected.Id, clone.Id);
+            Assert.AreEqual(expected.Name, clone.Name);
+        }
+
+        [Test]
+        public void Can_ignore_properties() {
+            var expected = new Simple() { Id = 42, Name = "Everything" };
+            var clone = Incubator.Clone(expected, new[] { "Id" });
+            Assert.AreNotSame(expected, clone);
+            Assert.AreNotEqual(expected.Id, clone.Id);
+            Assert.AreEqual(expected.Name, clone.Name);
         }
 
         [Test]
         public void Can_clone_complex_dto() {
-            var expected = new Complex() { Simple = new Simple() { Id = 42 } };
+            var expected = new Complex() { Simple = new Simple() { Id = 42, Name = "Everything" } };
             var clone = Incubator.Clone(expected);
 
             Assert.AreNotSame(expected, clone);
             Assert.AreNotSame(expected.Simple, clone.Simple);
             Assert.AreEqual(expected.Simple.Id, clone.Simple.Id);
+            Assert.AreEqual(expected.Simple.Name, clone.Simple.Name);
         }
 
         [Test]
@@ -185,7 +196,7 @@ namespace Droog.Subzero.Test {
 
             Assert.AreNotSame(expected, clone);
             Assert.AreNotSame(expected.Lookup, clone.Lookup);
-            Assert.AreEqual(expected.Lookup.Values.OrderBy(x => x).ToArray(), clone.Lookup.Values.OrderBy(x => x).ToArray());
+            Assert.AreEqual(expected.Lookup.Keys.OrderBy(x => x).ToArray(), clone.Lookup.Keys.OrderBy(x => x).ToArray());
             Assert.AreNotSame(expected.Lookup["foo"], clone.Lookup["foo"]);
             Assert.AreEqual(expected.Lookup["foo"].Id, clone.Lookup["foo"].Id);
 

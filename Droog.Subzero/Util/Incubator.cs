@@ -17,38 +17,74 @@
  */
 using System;
 using System.Collections;
+using System.Collections.Generic;
+using System.Linq.Expressions;
 using System.Reflection;
 
 namespace Droog.Subzero.Util {
-    public class Incubator {
 
-        private Incubator() { }
+    public class Incubator {
+        private readonly HashSet<string> _ignore;
+
+        private Incubator(string[] ignore) {
+            _ignore = new HashSet<string>(ignore ?? new string[0]);
+        }
 
         public static T Clone<T>(T dto) where T : class {
-            return new Incubator().DeepCopy(dto);
+            return Clone(dto, null);
+        }
+
+        public static T Clone<T>(T dto, string[] ignore) where T : class {
+            return new Incubator(ignore).DeepCopy(dto);
         }
 
         private T DeepCopy<T>(T dto) {
-
             return (T)Copy(dto, dto.GetType());
         }
 
         private object Copy(object o, Type t) {
-            //var t = o.GetType();
             if(t.IsValueType || o is string) {
                 return o;
             }
             Func<object, object> copier;
             if(o is IEnumerable) {
-                copier = GetEnumerableCopier(t);
+                if(t.IsGenericType && t.GetGenericTypeDefinition() == typeof(IDictionary<,>)) {
+                    copier = GetDictionaryCopier(t);
+                } else {
+                    copier = GetEnumerableCopier(t);
+                }
             } else {
                 copier = CopyObject;
             }
             return copier(o);
         }
 
+        private Func<object, object> GetDictionaryCopier(Type type) {
+            return dictionary => CopyDictionary(type, dictionary);
+        }
+
+        private object CopyDictionary(Type sourceDictionaryType, object dictionary) {
+            var baseDictionaryType = typeof(Dictionary<,>);
+            var basePairType = typeof(KeyValuePair<,>);
+            var genericArgs = sourceDictionaryType.GetGenericArguments();
+            var keyType = genericArgs[0];
+            var valueType = genericArgs[1];
+            var dictionaryType = baseDictionaryType.MakeGenericType(genericArgs);
+            var pairType = basePairType.MakeGenericType(genericArgs);
+            var clone = Activator.CreateInstance(dictionaryType);
+            var addMethod = dictionaryType.GetMethod("Add");
+            var keyGetter = pairType.GetProperty("Key").GetGetMethod();
+            var valueGetter = pairType.GetProperty("Value").GetGetMethod();
+            foreach(var pair in (IEnumerable)dictionary) {
+                var key = keyGetter.Invoke(pair, null);
+                var value = valueGetter.Invoke(pair, null);
+                addMethod.Invoke(clone, new[] { Copy(key, keyType), Copy(value, valueType) });
+            }
+            return clone;
+        }
+
         private Func<object, object> GetEnumerableCopier(Type enumerableType) {
-            // check for supported type, should be only Array, ArrayList, ICollection<>, IList<> and IDictionary<>
+            //TODO: check for supported type, should be only Array, ArrayList, ICollection<>, IList<> and IDictionary<>
 
             if(enumerableType.IsArray) {
                 return CopyArray;
@@ -66,7 +102,7 @@ namespace Droog.Subzero.Util {
         private object CopyArrayList(object enumerable) {
             var copy = new ArrayList();
             foreach(var item in (IEnumerable)enumerable) {
-                copy.Add(Copy(item,item.GetType()));
+                copy.Add(Copy(item, item.GetType()));
             }
             return copy;
         }
@@ -88,7 +124,7 @@ namespace Droog.Subzero.Util {
             var enumerableType = enumerable.GetType();
             var itemType = enumerableType.IsArray
                 ? enumerableType.GetElementType()
-                : enumerableType.IsGenericType ? enumerableType.GetGenericArguments()[0] : typeof (object);
+                : enumerableType.IsGenericType ? enumerableType.GetGenericArguments()[0] : typeof(object);
             var list = new ArrayList();
             foreach(var item in (IEnumerable)enumerable) {
                 list.Add(Copy(item, itemType));
@@ -102,6 +138,9 @@ namespace Droog.Subzero.Util {
             var t = o.GetType();
             var copy = Activator.CreateInstance(t, true);
             foreach(var property in t.GetProperties(BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.FlattenHierarchy)) {
+                if(_ignore.Contains(property.Name)) {
+                    continue;
+                }
                 var value = property.GetValue(o, null);
                 if(value == null) {
                     continue;

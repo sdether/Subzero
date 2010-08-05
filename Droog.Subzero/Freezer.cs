@@ -20,7 +20,6 @@ using System.Reflection;
 using Castle.Core.Interceptor;
 using Castle.DynamicProxy;
 using Droog.Subzero.Util;
-using Metsys.Little;
 
 namespace Droog.Subzero {
     public class Freezer {
@@ -102,9 +101,8 @@ namespace Droog.Subzero {
             public bool State;
 
             private Frozen() { }
-
-            public Frozen Clone() { return new Frozen() { State = State }; }
         }
+
         private class FreezableInterceptor<T> : IFreezableInterceptor, IInterceptor where T : class {
             private readonly ProxyGenerator _generator;
             private readonly T _instance;
@@ -167,7 +165,8 @@ namespace Droog.Subzero {
                 if(_cloneMethod != null) {
                     clone = (T)_cloneMethod.Invoke(_instance, new object[0]);
                 } else {
-                    clone = Deserializer.Deserialize<T>(Serializer.Serialize(_instance));
+                    //clone = Deserializer.Deserialize<T>(Serializer.Serialize(_instance));
+                    clone = Incubator.Clone(_instance, new[] { "IsFrozen" });
                 }
                 return Wrap(_generator, clone, frozen);
             }
