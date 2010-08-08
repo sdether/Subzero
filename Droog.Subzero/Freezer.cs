@@ -105,10 +105,10 @@ namespace Droog.Subzero {
             private Frozen() { }
         }
 
-        // TODO: need to wrap entire graph at construction time
         private class FreezableInterceptor<T> : IFreezableInterceptor, IInterceptor where T : class {
             private readonly ProxyGenerator _generator;
             private readonly T _instance;
+            private readonly Dictionary<string,object> _properties = new Dictionary<string, object>();
             private readonly MethodInfo _cloneMethod;
             private readonly Frozen _frozen;
             private object _this;
@@ -147,20 +147,34 @@ namespace Droog.Subzero {
                         invocation.ReturnValue = Wrap(_generator, (T)instance, Frozen.False);
                         return;
                 }
+                var returnType = invocation.MethodInvocationTarget.ReturnType;
                 if(methodName.StartsWith("set_")) {
                     if(_frozen.State) {
                         throw new FrozenAccessException(string.Format("Cannot set '{0}' on frozen instance of '{1}'", methodName.Substring(4), _instance.GetType()));
                     }
                     var setValue = invocation.Arguments[0];
-                    if(setValue != null && !(setValue is string) && !invocation.MethodInvocationTarget.ReturnType.IsValueType && !IsFreezable(setValue)) {
-                        invocation.Arguments[0] = Wrap(_generator, invocation.MethodInvocationTarget.ReturnType, setValue, _frozen);
+                    var setType = invocation.MethodInvocationTarget.GetParameters()[0].ParameterType;
+                    if(setValue != null && IsProxiableType(setType) && !IsFreezable(setValue)) {
+                        _properties[methodName] = Wrap(_generator, setType, setValue, _frozen);
+                    }
+                } else if(methodName.StartsWith("get_") && IsProxiableType(returnType)) {
+                    object proxiedValue;
+                    if(_properties.TryGetValue(methodName, out proxiedValue)) {
+                        invocation.ReturnValue = proxiedValue;
+                        return;
                     }
                 }
                 var returnValue = invocation.MethodInvocationTarget.Invoke(_instance, invocation.Arguments);
-                if(returnValue != null && methodName.StartsWith("get_") && !(returnValue is string) && !invocation.MethodInvocationTarget.ReturnType.IsValueType && !IsFreezable(returnValue)) {
-                    returnValue = Wrap(_generator, invocation.MethodInvocationTarget.ReturnType, returnValue, _frozen);
+                if(returnValue != null && methodName.StartsWith("get_") && IsProxiableType(returnType)) {
+
+                    // need to wrap the value and store the proxy
+                    _properties[methodName] = returnValue = Wrap(_generator, invocation.MethodInvocationTarget.ReturnType, returnValue, _frozen);
                 }
                 invocation.ReturnValue = returnValue;
+            }
+
+            private bool IsProxiableType(Type type) {
+                return type != typeof (string) && !type.IsValueType;
             }
 
             private object Clone(Frozen frozen) {
