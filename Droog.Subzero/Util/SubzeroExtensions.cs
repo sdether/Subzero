@@ -30,5 +30,15 @@ namespace Droog.Subzero.Util {
             var t = typeof(T);
             return t.IsAssignableFrom(type);
         }
+
+        internal static TypeInfo GetTypeInfo(this object o) {
+            return TypeInfo.GetTypeInfo(o.GetType());
+        }
+
+        internal static Type GetEnumerableItemType(this Type t) {
+            return t.IsArray
+                ? t.GetElementType()
+                : t.IsGenericType ? t.GetGenericArguments()[0] : typeof(object);
+        }
     }
 }

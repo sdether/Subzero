@@ -15,8 +15,10 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
 using Droog.Subzero.Util;
 using NUnit.Framework;
@@ -160,7 +162,7 @@ namespace Droog.Subzero.Test {
 
         [Test]
         public void Can_clone_DtoWithValueEnumerable() {
-            var expected = new DtoWithValueList() { Values = new[] { 1, 2, 3 } };
+            var expected = new DtoWithValueEnumerable() { Values = new[] { 1, 2, 3 } };
             var clone = Incubator.Clone(expected);
 
             Assert.AreNotSame(expected, clone);

@@ -16,6 +16,8 @@
  * limitations under the License.
  */
 using System;
+using System.Collections;
+using System.Collections.Generic;
 using System.Reflection;
 using Castle.Core.Interceptor;
 using Castle.DynamicProxy;
@@ -28,7 +30,7 @@ namespace Droog.Subzero {
 
         private static readonly ProxyGenerator _generator = new ProxyGenerator();
 
-        // TODO: need to make sure all members are virtual
+        // TODO: need to check the type for virtuals and supported collection types
         public static T AsFreezable<T>(T instance) where T : class {
             if(instance.IsA<IFreezableWrapper>()) {
                 return instance;
@@ -103,6 +105,7 @@ namespace Droog.Subzero {
             private Frozen() { }
         }
 
+        // TODO: need to wrap entire graph at construction time
         private class FreezableInterceptor<T> : IFreezableInterceptor, IInterceptor where T : class {
             private readonly ProxyGenerator _generator;
             private readonly T _instance;
@@ -149,13 +152,13 @@ namespace Droog.Subzero {
                         throw new FrozenAccessException(string.Format("Cannot set '{0}' on frozen instance of '{1}'", methodName.Substring(4), _instance.GetType()));
                     }
                     var setValue = invocation.Arguments[0];
-                    if(setValue != null && !(setValue is string) && setValue.GetType().IsClass && !IsFreezable(setValue)) {
-                        invocation.Arguments[0] = Wrap(_generator, setValue.GetType(), setValue, _frozen);
+                    if(setValue != null && !(setValue is string) && !invocation.MethodInvocationTarget.ReturnType.IsValueType && !IsFreezable(setValue)) {
+                        invocation.Arguments[0] = Wrap(_generator, invocation.MethodInvocationTarget.ReturnType, setValue, _frozen);
                     }
                 }
                 var returnValue = invocation.MethodInvocationTarget.Invoke(_instance, invocation.Arguments);
-                if(returnValue != null && methodName.StartsWith("get_") && !(returnValue is string) && returnValue.GetType().IsClass && !IsFreezable(returnValue)) {
-                    returnValue = Wrap(_generator, returnValue.GetType(), returnValue, _frozen);
+                if(returnValue != null && methodName.StartsWith("get_") && !(returnValue is string) && !invocation.MethodInvocationTarget.ReturnType.IsValueType && !IsFreezable(returnValue)) {
+                    returnValue = Wrap(_generator, invocation.MethodInvocationTarget.ReturnType, returnValue, _frozen);
                 }
                 invocation.ReturnValue = returnValue;
             }
@@ -176,5 +179,4 @@ namespace Droog.Subzero {
             }
         }
     }
-
 }

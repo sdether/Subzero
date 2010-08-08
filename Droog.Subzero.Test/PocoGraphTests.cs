@@ -35,6 +35,13 @@ namespace Droog.Subzero.Test {
             AssertSameValue(data,freezable);
         }
 
+        [Ignore("currently wrap at each proxy call. needs to be addressed")]
+        [Test]
+        public void Proxied_child_is_constant_instance() {
+            var data = CreateData();
+            Assert.AreSame(data.Readonly,data.Readonly);
+        }
+
         [Test]
         public void Setting_property_wraps_the_instance_on_access() {
             var data = CreateData();

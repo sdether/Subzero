@@ -18,8 +18,6 @@
 using System;
 using System.Collections;
 using System.Collections.Generic;
-using System.Linq.Expressions;
-using System.Reflection;
 
 namespace Droog.Subzero.Util {
 
@@ -122,9 +120,7 @@ namespace Droog.Subzero.Util {
 
         private object CopyAsArray(object enumerable) {
             var enumerableType = enumerable.GetType();
-            var itemType = enumerableType.IsArray
-                ? enumerableType.GetElementType()
-                : enumerableType.IsGenericType ? enumerableType.GetGenericArguments()[0] : typeof(object);
+            var itemType = enumerableType.GetEnumerableItemType();
             var list = new ArrayList();
             foreach(var item in (IEnumerable)enumerable) {
                 list.Add(Copy(item, itemType));
@@ -135,17 +131,17 @@ namespace Droog.Subzero.Util {
         }
 
         private object CopyObject(object o) {
-            var t = o.GetType();
-            var copy = Activator.CreateInstance(t, true);
-            foreach(var property in t.GetProperties(BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.FlattenHierarchy)) {
+            var t = o.GetTypeInfo();
+            var copy = t.Create();
+            foreach(var property in t.Properties) {
                 if(_ignore.Contains(property.Name)) {
                     continue;
                 }
-                var value = property.GetValue(o, null);
+                var value = property.Get(o);
                 if(value == null) {
                     continue;
                 }
-                property.SetValue(copy, Copy(value, property.PropertyType), null);
+                property.Set(copy, Copy(value, property.Type));
             }
             return copy;
         }
