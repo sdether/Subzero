@@ -15,14 +15,90 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+using System.Collections.Generic;
 using System.Linq;
 using NUnit.Framework;
 
 namespace Droog.Subzero.Test {
 
-    [Ignore("don't deal with collections in graphs yet")]
     [TestFixture]
     public class PocoContainerTests {
+
+        [Test]
+        public void Can_freeze_and_access_DtoWithValueList() {
+            var dto = Freezer.AsFreezable(new DtoWithValueList() { Values = new[] { 1, 2, 3 } });
+            Freezer.Freeze(dto);
+            Assert.AreEqual(1, dto.Values[0]);
+        }
+
+        [Test]
+        [ExpectedException(typeof(FrozenAccessException))]
+        public void Frozen_DtoWithValueList_throws_on_add() {
+            var dto = Freezer.AsFreezable(new DtoWithValueList() { Values = new[] { 1, 2, 3 } });
+            Freezer.Freeze(dto);
+            dto.Values.Add(5);
+        }
+
+        [Test]
+        [ExpectedException(typeof(FrozenAccessException))]
+        public void Frozen_DtoWithValueList_throws_on_remove() {
+            var dto = Freezer.AsFreezable(new DtoWithValueList() { Values = new[] { 1, 2, 3 } });
+            Freezer.Freeze(dto);
+            dto.Values.Remove(2);
+        }
+
+        [Test]
+        public void Can_freeze_and_access_DtoWithObjectList() {
+            var dto = Freezer.AsFreezable(new DtoWithObjectList() {
+                Id = 1,
+                Children = new[] {new DtoWithObjectList() {
+                    Id = 2, Children = new[] {new DtoWithObjectList()}
+                }}
+            });
+            Freezer.Freeze(dto);
+            Assert.AreEqual(2, dto.Children[0].Id);
+        }
+
+        [Test]
+        [ExpectedException(typeof(FrozenAccessException))]
+        public void Frozen_DtoWithObjectList_throws_on_add() {
+            var dto = Freezer.AsFreezable(new DtoWithObjectList() {
+                Id = 1,
+                Children = new[] {new DtoWithObjectList() {
+                    Id = 2, Children = new[] {new DtoWithObjectList()}
+                }}
+            });
+            Freezer.Freeze(dto);
+            dto.Children.Add(new DtoWithObjectList() { Id = 10 });
+        }
+
+        [Test]
+        [ExpectedException(typeof(FrozenAccessException))]
+        public void Frozen_DtoWithObjectList_throws_on_remove() {
+            var dto = Freezer.AsFreezable(new DtoWithObjectList() {
+                Id = 1,
+                Children = new[] {new DtoWithObjectList() {
+                    Id = 2, Children = new[] {new DtoWithObjectList()}
+                }}
+            });
+            Freezer.Freeze(dto);
+            var c = dto.Children[0];
+            dto.Children.Remove(c);
+        }
+
+        [Test]
+        [ExpectedException(typeof(FrozenAccessException))]
+        public void Frozen_DtoWithObjectList_throws_on_mod_item() {
+            var dto = Freezer.AsFreezable(new DtoWithObjectList() {
+                Id = 1,
+                Children = new[] {new DtoWithObjectList() {
+                    Id = 2, Children = new[] {new DtoWithObjectList()}
+                }}
+            });
+            Freezer.Freeze(dto);
+            var c = dto.Children[0];
+            c.Id = 5;
+        }
 
         [Test]
         public void Can_freeze_and_access_DtoWithValueCollection() {
@@ -34,7 +110,7 @@ namespace Droog.Subzero.Test {
         [Test]
         [ExpectedException(typeof(FrozenAccessException))]
         public void Frozen_DtoWithValueCollection_throws_on_add() {
-            var dto = Freezer.AsFreezable(new DtoWithValueCollection() { Values = new[] { 1, 2, 3 } });
+            var dto = Freezer.AsFreezable(new DtoWithValueCollection() { Values = new List<int>(new[] { 1, 2, 3 }) });
             Freezer.Freeze(dto);
             dto.Values.Add(5);
         }
@@ -42,7 +118,7 @@ namespace Droog.Subzero.Test {
         [Test]
         [ExpectedException(typeof(FrozenAccessException))]
         public void Frozen_DtoWithValueCollection_throws_on_remove() {
-            var dto = Freezer.AsFreezable(new DtoWithValueCollection() { Values = new[] { 1, 2, 3 } });
+            var dto = Freezer.AsFreezable(new DtoWithValueCollection() { Values = new List<int>(new[] { 1, 2, 3 }) });
             Freezer.Freeze(dto);
             dto.Values.Remove(2);
         }
@@ -64,9 +140,11 @@ namespace Droog.Subzero.Test {
         public void Frozen_DtoWithObjectCollection_throws_on_add() {
             var dto = Freezer.AsFreezable(new DtoWithObjectCollection() {
                 Id = 1,
-                Children = new[] {new DtoWithObjectCollection() {
-                    Id = 2, Children = new[] {new DtoWithObjectCollection()}
-                }}
+                Children = new List<DtoWithObjectCollection> {
+                    new DtoWithObjectCollection() {
+                        Id = 2, Children = new[] {new DtoWithObjectCollection()}
+                    }
+                }
             });
             Freezer.Freeze(dto);
             dto.Children.Add(new DtoWithObjectCollection() { Id = 10 });
